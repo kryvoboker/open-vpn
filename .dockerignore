@@ -11,43 +11,20 @@
 *~
 
 # Docker files (exclude from build context except needed ones)
-.docker/dev
-!.docker/dev/mariadb/
-!.docker/dev/memcached/
-!.docker/dev/php/
-!.docker/dev/nginx/
-!.docker/dev/cron/
 .docker/prod
-!.docker/prod/mariadb/
-!.docker/prod/memcached/
-!.docker/prod/php/
-!.docker/prod/nginx/
-!.docker/prod/cron/
+!.docker/prod/ubuntu/
 
 # Node.js
-httpdocs/catalog-assets
 npm-debug.log
 yarn-error.log
 
-httpdocs/vendor
-httpdocs/image
-
-# Composer
-#httpdocs/vendor
-
 # Logs
 *.log
-storage/logs/*
 
 # Database
 .db
 *.sql
 *.sqlite
-
-# Cache and temp files
-storage/cache/*
-storage/temp/*
-storage/feed/*
 
 # OS files
 .DS_Store
