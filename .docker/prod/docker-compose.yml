@@ -1,0 +1,36 @@
+name: "openvpn-server"
+services:
+  openvpn:
+    build:
+      context: $PWD
+      dockerfile: .docker/prod/ubuntu/Dockerfile
+    container_name: openvpn
+    image: openvpn-server:1.0
+    restart: unless-stopped
+
+    env_file:
+      - ../../.docker/prod/env/.env
+
+    security_opt:
+      - no-new-privileges:true       # Disables setuid/setgid
+      - apparmor=docker-default      # Limits syscalls and file system. Profile AppArmor
+    cap_drop:
+      - ALL # Removes Linux capabilities
+    cap_add:
+      - NET_ADMIN      # Required for OpenVPN to manage network interfaces
+      - SETGID         # Required for changing group
+      - SETUID         # Required for changing user
+      - SETPCAP        # Required for retaining capabilities
+
+    devices:
+      - /dev/net/tun:/dev/net/tun
+
+    ports:
+      - "1194:1194/udp"
+
+    volumes:
+      - ../../data:/etc/openvpn
+      - ../../.docker/prod/ubuntu/server.conf:/etc/openvpn/server.conf:ro
+
+    sysctls:
+      - net.ipv4.ip_forward=1
