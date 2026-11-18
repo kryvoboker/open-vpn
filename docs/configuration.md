@@ -12,7 +12,7 @@ Docker Compose loads `.docker/prod/env/.env` into the container.
 | `UMASK` | No | `0002` | `entrypoint.sh` | File creation mask for the entrypoint |
 | `UID`, `GID` | No | — | Nothing | Present in the file but not used by Compose or the entrypoint |
 
-> The `.env` file is tracked in Git. Do not commit a real server address unless you accept that it becomes public.
+> The `.env` file is ignored by Git. Create it on each host with the variables above. Earlier commits still contain a copy of it.
 
 ### Changing the port or protocol
 

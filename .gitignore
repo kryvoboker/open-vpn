@@ -1,6 +1,7 @@
 .idea
 data
 /ai-chat.txt
+/.docker/prod/env/.env
 
 # Beads / Dolt files (added by bd init)
 .dolt/

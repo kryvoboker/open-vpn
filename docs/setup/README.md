@@ -10,7 +10,7 @@
 
 ## First start
 
-1. Set `OVPN_HOST` in `.docker/prod/env/.env` to the server's public IP or domain. See [configuration.md](../configuration.md) for all variables.
+1. Create `.docker/prod/env/.env` (it is not in Git) and set `OVPN_HOST` to the server's public IP or domain. See [configuration.md](../configuration.md) for all variables.
 2. Build the image: `make build-prod`.
 3. Start the server: `make up-prod`.
 4. Check the logs: `docker logs -f openvpn`. On the first start the entrypoint creates the PKI, including DH parameters, which can take several minutes.
