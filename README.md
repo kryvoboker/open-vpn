@@ -26,3 +26,6 @@ make gen-home-client
 ```
 
 This command will create a client configuration file in the `./data/clients/` directory and return the config in the terminal. Then you can copy the content and create your `*.ovpn` file.
+
+## Documentation
+See [docs/README.md](docs/README.md) for setup, configuration, architecture, deployment, and decision records.
