@@ -5,3 +5,4 @@ Path format: `docs/adr/YYYY/MM/NNNN-short-title.md`. `NNNN` increases globally a
 | # | Date | Title | Status |
 |---|---|---|---|
 | [0001](2026/11/0001-openvpn-server-in-docker.md) | 2026-11-18 | OpenVPN server in a single Docker container with Easy-RSA PKI | Accepted |
+| [0002](2026/11/0002-fail-fast-on-unreadable-pki.md) | 2026-11-18 | Fail fast on inaccessible PKI instead of adding capabilities | Accepted |

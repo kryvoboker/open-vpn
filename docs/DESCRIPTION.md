@@ -13,6 +13,7 @@ OpenVpn is a self-hosted OpenVPN server packaged as one Docker container. It giv
 - NAT (MASQUERADE) and forwarding rules from `tun0` to the default outbound interface, added without duplicates.
 - Client profile generation (`gen-client <name>`) producing a single inline `.ovpn` file with CA, certificate, key, and `tls-crypt` key.
 - CRL verification on the server.
+- Startup and client-generation access checks: if `data/` is not owned by root, the container exits with the failing paths and the `chown -R 0:0 data` fix instead of starting OpenVPN or re-initializing the PKI.
 - Container hardening: all capabilities dropped except `NET_ADMIN`, `SETUID`, `SETGID`, `SETPCAP`; `no-new-privileges`; AppArmor `docker-default`.
 - `make` targets for build, start, stop, restart, and generating the `home` client.
 

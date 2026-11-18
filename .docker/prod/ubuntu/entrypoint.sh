@@ -9,7 +9,8 @@ CLIENTS_DIR="/etc/openvpn/clients"
 
 EASYRSA_BIN=""
 
-mkdir -p "${PKI_DIR}" "${CLIENTS_DIR}"
+# Failure is reported by check_pki_access dirs
+mkdir -p "${PKI_DIR}" "${CLIENTS_DIR}" 2>/dev/null || true
 
 resolve_easyrsa_bin() {
   if command -v easyrsa >/dev/null 2>&1; then
@@ -87,6 +88,73 @@ init_pki_if_needed() {
   echo "[openvpn] PKI initialized."
 }
 
+# Files read by OpenVPN (keep in sync with server.conf)
+SERVER_PKI_FILES=(ca.crt issued/server.crt private/server.key dh.pem crl.pem tls-crypt.key)
+
+check_pki_access() {
+  # The container runs with cap_drop: ALL, so root has no CAP_DAC_OVERRIDE
+  # and can only read files it owns. Probe with real reads/writes.
+  local mode="${1:-server}"
+  local missing=() denied=() f path meta dir tmp
+
+  if [[ "${mode}" == "dirs" ]]; then
+    # Runs before init_pki_if_needed: Easy-RSA dirs are mode 700, so a misowned
+    # PKI looks missing and would be wiped and re-created.
+    for dir in /etc/openvpn "${PKI_DIR}" "${PKI_DIR}/private" "${PKI_DIR}/issued" "${CLIENTS_DIR}"; do
+      if [[ ! -e "${dir}" ]]; then
+        # The top-level mkdir -p failed to create it
+        if [[ "${dir}" == "${PKI_DIR}" || "${dir}" == "${CLIENTS_DIR}" ]]; then
+          meta="$(stat -c 'owner %u:%g, mode %a' /etc/openvpn 2>/dev/null)" || meta="owner unknown"
+          denied+=("${dir}/ cannot be created, /etc/openvpn/ is not writable (${meta})")
+        fi
+      elif ! (cd "${dir}" && ls -A >/dev/null) 2>/dev/null; then
+        meta="$(stat -c 'owner %u:%g, mode %a' "${dir}" 2>/dev/null)" || meta="owner unknown"
+        denied+=("${dir}/ (${meta})")
+      fi
+    done
+  else
+    for f in "${SERVER_PKI_FILES[@]}"; do
+      path="${PKI_DIR}/${f}"
+      if [[ ! -e "${path}" ]]; then
+        missing+=("${path}")
+      elif ! head -c 1 "${path}" >/dev/null 2>&1; then
+        meta="$(stat -c 'owner %u:%g, mode %a' "${path}" 2>/dev/null)" || meta="owner unknown"
+        denied+=("${path} (${meta})")
+      fi
+    done
+  fi
+
+  if [[ "${mode}" == "client" ]]; then
+    for dir in "${PKI_DIR}" "${CLIENTS_DIR}"; do
+      if tmp="$(mktemp -p "${dir}" .write-test.XXXXXX 2>/dev/null)"; then
+        rm -f "${tmp}"
+      else
+        meta="$(stat -c 'owner %u:%g, mode %a' "${dir}" 2>/dev/null)" || meta="owner unknown"
+        denied+=("${dir}/ is not writable (${meta})")
+      fi
+    done
+  fi
+
+  if [[ ${#missing[@]} -eq 0 && ${#denied[@]} -eq 0 ]]; then
+    return
+  fi
+
+  if [[ ${#missing[@]} -gt 0 ]]; then
+    echo "[openvpn] Missing PKI files:"
+    printf '[openvpn]   %s\n' "${missing[@]}"
+    echo "[openvpn] Restore them from a backup of data/, or remove data/pki to create a new PKI (all client profiles must then be reissued)."
+  fi
+
+  if [[ ${#denied[@]} -gt 0 ]]; then
+    echo "[openvpn] Cannot access PKI files:"
+    printf '[openvpn]   %s\n' "${denied[@]}"
+    echo "[openvpn] The container runs with cap_drop: ALL (no CAP_DAC_OVERRIDE), so root can only access files it owns."
+    echo "[openvpn] Fix on the host, from the project root: chown -R 0:0 data"
+  fi
+
+  exit 1
+}
+
 ensure_ip_forwarding() {
   # container sysctl is set via docker-compose, but keep a guard
   if [[ -f /proc/sys/net/ipv4/ip_forward ]]; then
@@ -122,7 +190,7 @@ print_client_hint() {
 [openvpn] To generate a client profile:
   docker exec -it openvpn /entrypoint.sh gen-client <client_name>
 
-Then find the file in ./clients/<client_name>.ovpn
+Then find the file in ./data/clients/<client_name>.ovpn
 EOF
 }
 
@@ -177,13 +245,17 @@ EOF
 
 case "${1:-}" in
   gen-client)
+    check_pki_access dirs
     init_pki_if_needed
+    check_pki_access client
     gen_client "${2:-}"
     exit 0
     ;;
 esac
 
+check_pki_access dirs
 init_pki_if_needed
+check_pki_access server
 #ensure_ip_forwarding
 ensure_nat_rules
 print_client_hint
