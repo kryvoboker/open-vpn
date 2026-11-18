@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "embedded",
+  "dolt_database": "open_vpn",
+  "project_id": "68ef3b86-3bdc-4836-bd38-077f1a69d4b8"
+}
